@@ -1,0 +1,183 @@
+table=readtable("Lab3Inputsmodified1.xlsx");
+table2=readtable("arrayA1.xlsx");
+vars=table.(2);
+
+global A
+A=table2.(2);
+global B
+B=vars(1);
+global m
+m=vars(2);
+global k
+k=vars(3);
+global count
+count = 0;
+
+h=vars(4);hbig=vars(5);hsmall=vars(6);hcut=vars(7);hraise=vars(8);
+E = vars(9);
+yinit=vars(11);
+tinit=vars(13);
+
+% initialize vectors 
+X=[]; % vector of x values
+Y=[]; % vector of y values
+T=[]; % vector of t values
+Tz =[]; % vector of tzero values
+T2=[];%vector of T2 values
+T3=[];%vector of T3 values
+P =[];%vector of cycles of period
+TA=[];%vector of approximation of period
+j=1; % counting loops
+t=tinit;
+y=yinit;
+tzero=1;
+for n = 1:size(A)
+    tfin=vars(12);
+    xinit=A(n);
+    x=xinit;
+  if size(A)==21
+      for n = 21 
+          tfin= 2.5
+      end
+  end 
+      
+while t < tfin
+    tnew = t + h;
+    if tnew > tfin % checking if tnew is bigger than our final t
+        h = tfin - t;
+        tnew = t + h;
+    end
+    [xk0,yk0]= prime(t,x,y); 
+    xlow = x+(h*xk0); % compute xlow
+    ylow = y+(h*yk0); % compute ylow
+    [xk1,yk1]= prime(tnew,xlow,ylow); % corrected slopes
+    xhigh=x+(h/2)*(xk0+xk1); % compute xhigh
+    yhigh=y+(h/2)*(yk0+yk1); % compute yhigh
+    e_x = abs(xhigh - xlow);
+    e_y = abs(yhigh - ylow);
+    e = max([e_x,e_y]);
+    if e < E
+        if yhigh < 0 && y > 0
+            tzero = (((-y)*(tnew-t))/(yhigh-y))+t;
+            % compute tzero at y=0
+        end
+        h = h*hraise;
+        if h > hbig
+            h = hbig; % dont want h getting too big
+        end
+    % append vectors with values
+    X = [X xhigh];
+    Y = [Y yhigh];
+    T = [T tnew];
+    Tz = [Tz, tzero];
+    j = j+1;
+    % set new x, y and t values
+    x=xhigh;
+    y=yhigh;
+    t=tnew;
+    else
+        h = h/hcut;
+        if h < hsmall
+            error('H is too small') % dont want h getting too small
+        end 
+    end
+end
+J = 1:j;
+s = length(Tz)-1;
+for i = 1:s
+    p = Tz(i+1)-Tz(i); % caclulating period by taking succ
+    P=[P p];
+
+end
+    T2n= 2*pi*(1-(3/8)*A(n));
+    T2=[T2 T2n];
+    T3n= 2*pi*(1-(3/8)*A(n)+(57/265)*(A(n))^2);
+    T3=[T3 T3n];
+    Periods=P(P~=0);
+    avgper = mean(Periods);
+    TA=[TA avgper];
+end
+nsteps=length(X)-1;
+raccept=(2*nsteps)/count;  
+% dat file for T, X
+writematrix([T.' X.'],'x.dat');
+% dat file for T, Y
+writematrix([T.' Y.'],'y.dat');
+% dat file for X, Y
+writematrix([X.' Y.'],'xy.dat');
+% dat file for A, and periods
+writematrix([A TA.'],'periods.dat');
+
+
+if size(A)==30   
+figure(6) 
+plot(A,TA,'black') % plotting computed Period against A
+axis([0 3 0 8.2])  
+hold on 
+plot(A,T2, 'blue') % plotting T2 against A
+plot(A,T3, 'red') % plotting T3 against A
+plot(X(:,30),Y(:,30)) % plotting x vs y 
+title('Compted Period and approximations of A')
+xlabel('A')
+ylabel('TA,T2,T3')
+legend({'TA','T2','T3'}, 'Location', 'southeast')
+hold off
+
+figure (7.1)
+plot(X(:,30),Y(:,30)) % plotting x vs y for A=3
+axis([-1.4 1.4 -1.4 1.4]) 
+title('X vs Y values for error tol 0.1')
+xlabel('X')
+ylabel('Y')
+
+figure(7.2) %phase plot
+plot(X(:,10),Y(:,10),'black') % plotting x vs y for A=1
+axis([-1.4 1.4 -1.4 1.4]) 
+hold on 
+plot(X(:,20),Y(:,20),'red') % plotting x vs y for A=2
+plot(X(:,30),Y(:,30),'blue') % plotting x vs y for A=3
+title('X vs Y values for error tol 0.1')
+xlabel('X')
+ylabel('Y')
+hold off
+end
+%%%%%% for second matrix data of A (0.1 to 1.9)with new inputs
+if size(A)==19
+figure(8) 
+plot(T2,TA, 'blue') % plotting T2 against A
+axis([0 3 0 8.2])  
+hold on 
+plot(T3,TA, 'red') % plotting T3 against A
+plot(X(:,30),Y(:,30)) % plotting x vs y 
+
+title('Compted Period and approximations of A')
+xlabel('A')
+ylabel('TA,T2,T3')
+legend({'TA','T2','T3'}, 'Location', 'southeast')
+hold off
+
+figure (9.1)
+plot(X(:,19),Y(:,19)) % plotting x vs y for A=1.9
+axis([-1.4 1.4 -1.4 1.4]) 
+title('X vs Y values for error tol 0.1')
+xlabel('X')
+ylabel('Y')
+end
+
+%%%%%% for third matrix data of A (0.1 to 2.1) with new inputs
+if size(A)==21   
+figure (9.2) %phase plot
+plot(Y(:,15),X(:,15),'yellow') % plotting x vs y for A=1.5
+axis([-2 8 -2 8]) 
+hold on 
+plot(Y(:,16),X(:,16),'red') % plotting x vs y for A=1.6
+plot(Y(:,17),X(:,17),'blue') % plotting x vs y for A=1.7
+plot(Y(:,18),X(:,18),'green') % plotting y vs x for A=1.8
+plot(Y(:,19),X(:,19),'cyan') % plotting y vs x for A=1.9
+plot(Y(:,21),X(:,21),'black') % plotting y vs x for A=2.1
+title('Y vs X')
+xlabel('Y')
+ylabel('X')
+legend({'A=1.5','A=1.6','A=1.7','A=1.8','A=1.9','A=2.1'}, 'Location', 'southeast')
+hold off    
+end 
